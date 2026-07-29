@@ -9,13 +9,33 @@
 #include <atomic>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace rocprofsys::control
 {
+namespace
+{
+using callback_list = std::vector<std::function<void()>>;
+
+void
+invoke_all(const callback_list& callbacks)
+{
+    for(const auto& cb : callbacks)
+        cb();
+}
+
+bool
+listens_to(const subscriber& sub, scope event_scope)
+{
+    return sub.scopes.contains(event_scope);
+}
+}  // namespace
+
 session::session() noexcept
 {
     for(auto& tracing_flag : m_scope_tracing)
@@ -27,6 +47,7 @@ session::session() noexcept
 void
 session::shutdown()
 {
+    const std::scoped_lock notify_lk{ m_notify_mutex };
     {
         const std::scoped_lock subs_lk{ m_subscribers_mutex };
         m_subscribers.clear();
@@ -110,17 +131,21 @@ session::set_action(std::string_view name, action act, scope event_scope)
 void
 session::force_initial_pause()
 {
-    const std::scoped_lock subs_lk{ m_subscribers_mutex };
-    for(const auto& sub : m_subscribers)
-    {
-        const bool any_paused_for_sub =
-            sub.scopes.any_of([this](scope listened) { return !is_active(listened); });
+    const std::scoped_lock notify_lk{ m_notify_mutex };
 
-        if(any_paused_for_sub && sub.on_pause)
+    callback_list to_fire;
+    {
+        const std::scoped_lock subs_lk{ m_subscribers_mutex };
+        to_fire.reserve(m_subscribers.size());
+        for(const auto& sub : m_subscribers)
         {
-            sub.on_pause();
+            const bool any_paused_for_sub = sub.scopes.any_of(
+                [this](scope listened) { return !is_active(listened); });
+
+            if(any_paused_for_sub && sub.on_pause) to_fire.push_back(sub.on_pause);
         }
     }
+    invoke_all(to_fire);
 }
 
 void
@@ -151,54 +176,40 @@ session::is_active_without(std::string_view name, scope event_scope) const noexc
     });
 }
 
-namespace
-{
-bool
-listens_to(const subscriber& sub, scope event_scope)
-{
-    return sub.scopes.contains(event_scope);
-}
-}  // namespace
-
 void
 session::notify_pause(scope event_scope)
 {
-    const std::scoped_lock notify_lk{ m_subscribers_mutex };
-    for(const auto& sub : m_subscribers)
+    callback_list to_fire;
     {
-        if(!listens_to(sub, event_scope))
+        const std::scoped_lock subs_lk{ m_subscribers_mutex };
+        to_fire.reserve(m_subscribers.size());
+        for(const auto& sub : m_subscribers)
         {
-            continue;
-        }
-        LOG_DEBUG("session: pausing subscriber '{}'", sub.name);
-        if(sub.on_pause)
-        {
-            sub.on_pause();
+            if(!listens_to(sub, event_scope)) continue;
+            LOG_DEBUG("session: pausing subscriber '{}'", sub.name);
+            if(sub.on_pause) to_fire.push_back(sub.on_pause);
         }
     }
+    invoke_all(to_fire);
 }
 
 void
 session::notify_resume(scope event_scope)
 {
-    const std::scoped_lock notify_lk{ m_subscribers_mutex };
-    for(const auto& sub : m_subscribers)
+    callback_list to_fire;
     {
-        if(!listens_to(sub, event_scope))
+        const std::scoped_lock subs_lk{ m_subscribers_mutex };
+        to_fire.reserve(m_subscribers.size());
+        for(const auto& sub : m_subscribers)
         {
-            continue;
-        }
-        const bool all_active =
-            sub.scopes.all_of([this](scope listened) { return is_active(listened); });
-        if(!all_active)
-        {
-            continue;
-        }
-        LOG_DEBUG("session: resuming subscriber '{}'", sub.name);
-        if(sub.on_resume)
-        {
-            sub.on_resume();
+            if(!listens_to(sub, event_scope)) continue;
+            const bool all_active =
+                sub.scopes.all_of([this](scope listened) { return is_active(listened); });
+            if(!all_active) continue;
+            LOG_DEBUG("session: resuming subscriber '{}'", sub.name);
+            if(sub.on_resume) to_fire.push_back(sub.on_resume);
         }
     }
+    invoke_all(to_fire);
 }
 }  // namespace rocprofsys::control
