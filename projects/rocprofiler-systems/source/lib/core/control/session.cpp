@@ -40,7 +40,7 @@ session::session() noexcept
 {
     for(auto& tracing_flag : m_scope_tracing)
     {
-        tracing_flag.store(true, std::memory_order_relaxed);
+        tracing_flag.store(true, std::memory_order_release);
     }
 }
 
@@ -60,7 +60,7 @@ session::shutdown()
         }
         for(auto& tracing_flag : m_scope_tracing)
         {
-            tracing_flag.store(true, std::memory_order_relaxed);
+            tracing_flag.store(true, std::memory_order_release);
         }
     }
 }
@@ -104,10 +104,10 @@ session::set_action(std::string_view name, action act, scope event_scope)
     {
         const std::scoped_lock action_lk{ m_actions_mutex };
 
-        was_active = m_scope_tracing[scope_idx].load(std::memory_order_relaxed);
+        was_active = m_scope_tracing[scope_idx].load(std::memory_order_acquire);
         m_actions[scope_idx][std::string{ name }] = act;
         now_active                                = resolve_locked(event_scope);
-        m_scope_tracing[scope_idx].store(now_active, std::memory_order_relaxed);
+        m_scope_tracing[scope_idx].store(now_active, std::memory_order_release);
     }
 
     if(was_active == now_active)
@@ -153,7 +153,7 @@ session::update_scope_tracing_locked(scope event_scope)
 {
     const auto idx = static_cast<std::size_t>(event_scope);
     assert(idx < SCOPE_COUNT);
-    m_scope_tracing[idx].store(resolve_locked(event_scope), std::memory_order_relaxed);
+    m_scope_tracing[idx].store(resolve_locked(event_scope), std::memory_order_release);
 }
 
 // Any pause action within the given scope pauses that scope. Skip is
