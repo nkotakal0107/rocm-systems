@@ -106,6 +106,7 @@ void TestPerfCntrReadWrite::CountEvents(amdsmi_processor_handle dv_ind, amdsmi_e
   } else {
     CHK_ERR_ASRT(ret)
   }
+  if (sleep_sec < 0) sleep_sec = 0;
   sleep(static_cast<uint32_t>(sleep_sec));
 
   DISPLAY_AMDSMI_API("amdsmi_gpu_read_counter", "", VERB(STANDARD));
@@ -324,9 +325,9 @@ void TestPerfCntrReadWrite::Run(void) {
           break;
 
         default:
-          std::cout << "Unexpected exception caught with amdsmi "
-                       "return value of "
-                    << r << std::endl;
+          FAIL() << "Unexpected exception caught with amdsmi "
+                    "return value of "
+                 << r;
       }
     } catch (...) {
       ASSERT_FALSE(1) << "Unexpected exception caught";

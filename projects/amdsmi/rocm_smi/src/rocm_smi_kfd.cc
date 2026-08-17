@@ -1294,7 +1294,7 @@ int KFDNode::get_total_memory(uint64_t* total) {
       if (line.substr(0, size_in_bytes_property.length()) == size_in_bytes_property) {
         auto bytes = line.substr(size_in_bytes_property.length());
         try {
-          *total += static_cast<uint64_t>(std::stol(bytes));
+          *total += std::stoull(bytes);
           break;
         } catch (...) {
           dentry = readdir(kfd_node_dir);

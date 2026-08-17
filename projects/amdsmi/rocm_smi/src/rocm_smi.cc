@@ -1437,7 +1437,7 @@ static rsmi_status_t get_frequencies(amd::smi::DevInfoTypes type, rsmi_clk_type_
   // "no current level" via f->current = UINT32_MAX so callers can still report
   // the frequency table.
   if (f->current >= f->num_supported) {
-    f->current = static_cast<uint32_t>(-1);
+    f->current = UINT32_MAX;
   }
 
   return RSMI_STATUS_SUCCESS;
