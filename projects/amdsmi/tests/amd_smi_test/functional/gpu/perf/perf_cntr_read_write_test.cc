@@ -330,7 +330,7 @@ void TestPerfCntrReadWrite::Run(void) {
                  << r;
       }
     } catch (...) {
-      ASSERT_FALSE(1) << "Unexpected exception caught";
+      FAIL() << "Unexpected exception caught";
     }
   }
 }

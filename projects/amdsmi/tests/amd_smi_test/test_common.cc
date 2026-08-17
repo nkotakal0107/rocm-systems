@@ -137,19 +137,19 @@ uint32_t ProcessCmdline(AMDSMITstGlobals* test, int arg_cnt, char** arg_list) {
     uint32_t num = 0;
     switch (a) {
       case 'i':
-        num = static_cast<uint32_t>(std::stoi(optarg));
+        num = std::stoi(optarg);
         if (num < 0) num = 0;
         test->num_iterations = static_cast<uint32_t>(num);
         break;
 
       case 'v':
-        num = static_cast<uint32_t>(std::stoi(optarg));
+        num = std::stoi(optarg);
         if (num < 0) num = 0;
         test->verbosity = static_cast<uint32_t>(num);
         break;
 
       case 'm':
-        num = static_cast<uint32_t>(std::stoi(optarg));
+        num = std::stoi(optarg);
         if (num < 0) num = 0;
         test->monitor_verbosity = static_cast<uint32_t>(num);
         break;

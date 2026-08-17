@@ -76,9 +76,7 @@ static uint32_t GetDeviceIndex(const std::string s) {
   return static_cast<uint32_t>(stoi(t));
 }
 
-// Helper function to suppress deprecated warnings for std::stable_sort
-// std::stable_sort uses get_temporary_buffer() which is deprecated and
-// will be removed in C++26
+// Suppress -Wdeprecated: get_temporary_buffer is removed in C++26
 template <typename ItrTp, typename CmpTp>
 static inline auto stable_sort_suppress_deprecated(ItrTp first, ItrTp last, CmpTp cmp) -> void {
 #pragma clang diagnostic push
