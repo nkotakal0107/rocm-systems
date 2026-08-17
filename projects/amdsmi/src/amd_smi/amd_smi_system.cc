@@ -489,6 +489,7 @@ amdsmi_status_t AMDSmiSystem::populate_amd_ainic_devices() {
   for (uint32_t nic_idx = 0; nic_idx < discovery.count; ++nic_idx) {
     const char* bdf_str = discovery.devices[nic_idx].bdf;
     auto [bdfid, bdf_info] = bdf_to_int(bdf_str);
+    (void)bdf_info;
     AMDSmiAINICDevice::AINICInfo ai_nic_info = {};
     amdsmi_status_t status = populate_amd_ainic_device(ainic_ctx_, bdfid, ai_nic_info);
     if (status != AMDSMI_STATUS_SUCCESS) {
