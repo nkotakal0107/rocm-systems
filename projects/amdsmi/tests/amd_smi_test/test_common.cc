@@ -134,7 +134,7 @@ uint32_t ProcessCmdline(AMDSMITstGlobals* test, int arg_cnt, char** arg_list) {
       break;
     }
 
-    uint32_t num = 0;
+    int32_t num = 0;
     switch (a) {
       case 'i':
         num = std::stoi(optarg);

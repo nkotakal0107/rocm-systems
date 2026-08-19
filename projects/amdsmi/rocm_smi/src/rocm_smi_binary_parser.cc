@@ -33,29 +33,36 @@
 
 namespace amd::smi {
 static uint64_t get_value(uint8_t** ptr, struct metric_field* field) {
-  uint64_t v;
-// Warnings disabled, working as intended
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-align"
+  uint64_t v = 0;
+  // Fields are packed at arbitrary offsets, so a wider load through uint8_t*
+  // would be misaligned; memcpy lowers to the same instruction.
   switch (field->field_type) {
-    case FIELD_TYPE_U8:
-      v = *(uint8_t*)(*ptr);
-      ++(*ptr);
+    case FIELD_TYPE_U8: {
+      uint8_t u8;
+      memcpy(&u8, *ptr, sizeof(u8));
+      v = u8;
+      (*ptr) += sizeof(u8);
       break;
-    case FIELD_TYPE_U16:
-      v = *(uint16_t*)(*ptr);
-      (*ptr) += 2;
+    }
+    case FIELD_TYPE_U16: {
+      uint16_t u16;
+      memcpy(&u16, *ptr, sizeof(u16));
+      v = u16;
+      (*ptr) += sizeof(u16);
       break;
-    case FIELD_TYPE_U32:
-      v = *(uint32_t*)(*ptr);
-      (*ptr) += 4;
+    }
+    case FIELD_TYPE_U32: {
+      uint32_t u32;
+      memcpy(&u32, *ptr, sizeof(u32));
+      v = u32;
+      (*ptr) += sizeof(u32);
       break;
+    }
     case FIELD_TYPE_U64:
-      v = *(uint64_t*)(*ptr);
-      (*ptr) += 8;
+      memcpy(&v, *ptr, sizeof(v));
+      (*ptr) += sizeof(v);
       break;
   }
-#pragma clang diagnostic pop
   return v;
 }
 
@@ -220,11 +227,11 @@ top:
 
     // done move to next or loop
     ++x;
-    if (table[x].field_name == NULL && num_smn > 0) {
+    if (table[x].field_name == NULL && num_smn > 1) {
       --num_smn;
       x = smn_start;
       ++cur_smn;
-    } else if (table[x].field_name == NULL && num_instance > 0) {
+    } else if (table[x].field_name == NULL && num_instance > 1) {
       --num_instance;
       x = instance_start;
       ++cur_instance;

@@ -45,6 +45,8 @@ namespace amd::smi {
 
 static const char* kKFDNodesPathRoot = "/sys/class/kfd/kfd/topology/nodes";
 static const char* kKFDLinkPath[] = {"io_links", "p2p_links"};
+static_assert(sizeof(kKFDLinkPath) / sizeof(kKFDLinkPath[0]) == P2P_LINK_DIRECTORY + 1,
+              "kKFDLinkPath needs one entry per LINK_DIRECTORY_TYPE");
 
 // IO Link Property strings
 static const char* kIOLinkPropTYPEStr = "type";
@@ -70,16 +72,7 @@ static std::string LinkPathRoot(uint32_t node_indx, LINK_DIRECTORY_TYPE director
   link_path_root += '/';
   link_path_root += std::to_string(node_indx);
   link_path_root += '/';
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
-  // Check is correct to catch if LINK_DIRECTORY_TYPE is expanded without
-  // expanding kKFDLinkPath
-  if (directory < sizeof(kKFDLinkPath) / sizeof(kKFDLinkPath[0])) {
-    link_path_root += kKFDLinkPath[directory];
-  } else {
-    link_path_root = "";
-  }
-#pragma clang diagnostic pop
+  link_path_root += kKFDLinkPath[directory];
   return link_path_root;
 }
 

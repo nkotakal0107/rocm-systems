@@ -461,8 +461,9 @@ amdsmi_status_t smi_amdgpu_get_ranges(amd::smi::AMDSmiGPUDevice* device, amdsmi_
     max = current_freq;
     min = current_freq;
   }
-  if (dpm > static_cast<unsigned int>(INT_MAX) || max > static_cast<unsigned int>(INT_MAX) ||
-      min > static_cast<unsigned int>(INT_MAX) ||
+  if ((num_dpm && dpm > static_cast<unsigned int>(INT_MAX)) ||
+      (max_freq && max > static_cast<unsigned int>(INT_MAX)) ||
+      (min_freq && min > static_cast<unsigned int>(INT_MAX)) ||
       (sleep_state_freq && sleep_freq > static_cast<unsigned int>(INT_MAX))) {
     return AMDSMI_STATUS_INPUT_OUT_OF_BOUNDS;
   }

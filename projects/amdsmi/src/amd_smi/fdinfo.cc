@@ -37,14 +37,18 @@
 
 extern "C" {
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc99-designator"
+#endif
 // Using known extension, array designators
 static const char* container_type_name[AMDSMI_MAX_CONTAINER_TYPE] = {
     [AMDSMI_CONTAINER_LXC] = "lxc",
     [AMDSMI_CONTAINER_DOCKER] = "docker",
 };
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
 amdsmi_status_t gpuvsmi_pid_is_gpu(const std::string& path, const char* bdf) {
   DIR* d;

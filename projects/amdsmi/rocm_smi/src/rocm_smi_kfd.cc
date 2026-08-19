@@ -1293,6 +1293,8 @@ int KFDNode::get_total_memory(uint64_t* total) {
     while (std::getline(fs, line)) {
       if (line.substr(0, size_in_bytes_property.length()) == size_in_bytes_property) {
         auto bytes = line.substr(size_in_bytes_property.length());
+        // stoull() wraps a negative string to a huge value instead of throwing.
+        if (bytes.find('-') != std::string::npos) break;
         try {
           *total += std::stoull(bytes);
           break;

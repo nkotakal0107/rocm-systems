@@ -344,9 +344,7 @@ std::map<std::string, uint64_t> port_stats() {
 }
 }  // namespace
 
-int main(int argc, char* argv[]) {
-  (void)argc;  // unused
-  (void)argv;  // unused
+int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
   RAII _([]() { amdsmi_init(AMDSMI_INIT_AMD_NICS); }, []() { amdsmi_shut_down(); });
   auto nics = get_nics();
   for (const auto& [key, value] : port_stats()) {

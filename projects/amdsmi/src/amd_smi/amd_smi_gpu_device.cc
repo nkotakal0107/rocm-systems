@@ -506,7 +506,7 @@ std::vector<uint64_t> AMDSmiGPUDevice::get_bitmask_from_numa_node(int32_t node_i
         if (hyphen != std::string::npos) {
           int start = std::stoi(node_cpus.substr(0, hyphen));
           int end = std::stoi(node_cpus.substr(hyphen + 1));
-          if (start < 0 || end < 0 || end >= static_cast<int>(size * 64)) continue;
+          if (start < 0 || end < 0 || static_cast<size_t>(end) / 64 >= size) continue;
           for (int i = start; i <= end; ++i) {
             bitmask[static_cast<size_t>(i) / 64] |= (1ULL << (i % 64));
           }
@@ -514,6 +514,7 @@ std::vector<uint64_t> AMDSmiGPUDevice::get_bitmask_from_numa_node(int32_t node_i
           int core_int = std::stoi(node_cpus);
           if (core_int < 0) continue;
           size_t core = static_cast<size_t>(core_int);
+          if (core / 64 >= size) continue;
           bitmask[core / 64] |= (1ULL << (core % 64));
         }
       }
@@ -544,7 +545,7 @@ std::vector<uint64_t> AMDSmiGPUDevice::get_bitmask_from_local_cpulist(uint32_t d
         if (hyphen != std::string::npos) {
           int start = std::stoi(node_cpus.substr(0, hyphen));
           int end = std::stoi(node_cpus.substr(hyphen + 1));
-          if (start < 0 || end < 0 || end >= static_cast<int>(size * 64)) continue;
+          if (start < 0 || end < 0 || static_cast<size_t>(end) / 64 >= size) continue;
           for (int i = start; i <= end; ++i) {
             bitmask[static_cast<size_t>(i) / 64] |= (1ULL << (i % 64));
           }
@@ -552,6 +553,7 @@ std::vector<uint64_t> AMDSmiGPUDevice::get_bitmask_from_local_cpulist(uint32_t d
           int core_int = std::stoi(node_cpus);
           if (core_int < 0) continue;
           size_t core = static_cast<size_t>(core_int);
+          if (core / 64 >= size) continue;
           bitmask[core / 64] |= (1ULL << (core % 64));
         }
       }

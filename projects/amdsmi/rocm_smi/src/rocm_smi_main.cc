@@ -79,10 +79,14 @@ static uint32_t GetDeviceIndex(const std::string s) {
 // Suppress -Wdeprecated: get_temporary_buffer is removed in C++26
 template <typename ItrTp, typename CmpTp>
 static inline auto stable_sort_suppress_deprecated(ItrTp first, ItrTp last, CmpTp cmp) -> void {
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
   std::stable_sort(first, last, cmp);
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 }
 
 // Find the drm minor from from sysfs path "/sys/class/drm/cardX/device/drm".
@@ -328,7 +332,7 @@ void RocmSMI::Initialize(uint64_t flags) {
   ss << __PRETTY_FUNCTION__ << " Sort index based on BDF.";
   LOG_DEBUG(ss);
 
-  // Sort index based on BDF (BDF values are unique per device).
+  // Stable sort to keep the order if bdf is equal.
   stable_sort_suppress_deprecated(
       dv_to_id.begin(), dv_to_id.end(),
       [](const BDFDevicePair_t& p1, const BDFDevicePair_t& p2) { return p1.first < p2.first; });
@@ -452,7 +456,7 @@ void RocmSMI::Initialize(uint64_t flags) {
     ss << __PRETTY_FUNCTION__ << " Sort index based on BDF.";
     LOG_DEBUG(ss);
 
-    // Sort index based on BDF (BDF values are unique per device).
+    // Stable sort to keep the order if bdf is equal.
     stable_sort_suppress_deprecated(
         dv_to_id.begin(), dv_to_id.end(),
         [](const BDFDevicePair_t& p1, const BDFDevicePair_t& p2) { return p1.first < p2.first; });
@@ -512,7 +516,7 @@ void RocmSMI::Initialize(uint64_t flags) {
     ss << __PRETTY_FUNCTION__ << " Sort index based on BDF.";
     LOG_DEBUG(ss);
 
-    // Sort index based on BDF (BDF values are unique per device).
+    // Stable sort to keep the order if bdf is equal.
     stable_sort_suppress_deprecated(
         dv_to_id.begin(), dv_to_id.end(),
         [](const BDFDevicePair_t& p1, const BDFDevicePair_t& p2) { return p1.first < p2.first; });
@@ -1355,7 +1359,9 @@ uint32_t RocmSMI::DiscoverBRCMswitchDevices(void) {
       path = std::string(&(buf[0]));
       std::string suffixDel =
           "host" + std::to_string(cardId) + "/scsi_host/" + "host" + std::to_string(cardId) + "/";
-      path.erase(path.length() - suffixDel.length());
+      if (path.length() >= suffixDel.length()) {
+        path.erase(path.length() - suffixDel.length());
+      }
 
       constexpr auto MAX_BDF_LENGTH = std::size_t(12);
       // Only erase prefix if path is longer than BDF length to avoid iterator UB
