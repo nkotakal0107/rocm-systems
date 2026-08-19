@@ -24,19 +24,19 @@ elapsed_ns(timespec start, timespec stop)
 int
 main(int argc, char** argv)
 {
-    int iterations = (argc > 1) ? atoi(argv[1]) : 60;
+    const int iterations = (argc > 1) ? atoi(argv[1]) : 60;
 
     int interrupted = 0;
     int short_sleep = 0;
 
     for(int i = 0; i < iterations; ++i)
     {
-        timespec request = { 0, SLEEP_NS };
-        timespec start{};
-        timespec stop{};
+        const timespec request = { 0, SLEEP_NS };
+        timespec       start{};
+        timespec       stop{};
 
         clock_gettime(CLOCK_MONOTONIC, &start);
-        int status = nanosleep(&request, nullptr);
+        const int status = nanosleep(&request, nullptr);
         clock_gettime(CLOCK_MONOTONIC, &stop);
 
         if(status != 0 && errno == EINTR) ++interrupted;
