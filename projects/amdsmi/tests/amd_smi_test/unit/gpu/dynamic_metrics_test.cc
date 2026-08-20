@@ -29,6 +29,7 @@
 
 #include "rocm_smi/rocm_smi_gpu_metrics.h"
 #include "test_common.h"
+#include "unit/unit_test_framework.h"
 
 namespace amd::smi {
 
@@ -116,7 +117,7 @@ auto WriteBlobToTempFile(const std::vector<uint8_t>& blob,
 
 }  // namespace
 
-TEST(GpuUnit, GPUMetricDynamicVersionSupported) {
+TEST_F(GpuUnit, GPUMetricDynamicVersionSupported) {
   PRINT_VERBOSITY();
   const bool is_partition_metrics = false;
   for (auto ver : {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18}) {
@@ -162,7 +163,7 @@ TEST(GpuUnit, GPUMetricDynamicVersionSupported) {
   }
 }
 
-TEST(GpuUnit, XCPMetricDynamicVersionSupported) {
+TEST_F(GpuUnit, XCPMetricDynamicVersionSupported) {
   PRINT_VERBOSITY();
   const bool is_partition_metrics = true;
   for (auto ver : {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18}) {
