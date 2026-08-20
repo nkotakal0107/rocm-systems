@@ -4,6 +4,7 @@
 #include "steady.hpp"
 
 #include "core/control/clock.hpp"
+#include "core/state.hpp"
 
 #include <chrono>
 #include <mutex>
@@ -29,6 +30,7 @@ steady::sleep_until(clock_time_point deadline)
 void
 steady::interrupt()
 {
+    auto _thread_state_guard = state::thread::scoped(state::thread::Internal);
     {
         const std::scoped_lock clk_lcoks{ m_mutex };
         m_interrupted = true;
