@@ -173,10 +173,14 @@ jobs:
           # and a Group B/C glob for --suite-name, since the two groups need
           # different RCCL_BUILD_DIR/RCCL_TESTS_BIN and must run as separate
           # test_runner.py invocations (its build dir is a single global value
-          # for the whole process). All Group A test_suites entries are named
-          # "A<n>. Component - ..." in ainic.json.
-          GROUP_A_FILTER="A*. Component*"
-          GROUP_BC_FILTER="-A*. Component*"
+          # for the whole process). Group A test_suites entries in ainic.json are
+          # named "A<n>. Component - ...", plus "A<n>. Nightly - ..." for the ones
+          # that track an open finding: they use the same gtest binary, but the
+          # label-gated PR subset selects only Component (see SMOKE_SUITES), since
+          # a test that is expected to fail until a plugin fix lands is not
+          # something a PR author can act on.
+          GROUP_A_FILTER="A*. Component*:A*. Nightly*"
+          GROUP_BC_FILTER="-A*. Component*:-A*. Nightly*"
           RUN_GROUP_A=1
           RUN_GROUP_BC=1
           if [ -n "${TEST_SUITES}" ]; then
@@ -185,7 +189,7 @@ jobs:
             IFS=',' read -ra _suite_tokens <<< "${TEST_SUITES}"
             for tok in "${_suite_tokens[@]}"; do
               case "${tok}" in
-                A*". Component"*) GROUP_A_LIST="${GROUP_A_LIST:+${GROUP_A_LIST}:}${tok}" ;;
+                A*". Component"*|A*". Nightly"*) GROUP_A_LIST="${GROUP_A_LIST:+${GROUP_A_LIST}:}${tok}" ;;
                 *)                GROUP_BC_LIST="${GROUP_BC_LIST:+${GROUP_BC_LIST}:}${tok}" ;;
               esac
             done
