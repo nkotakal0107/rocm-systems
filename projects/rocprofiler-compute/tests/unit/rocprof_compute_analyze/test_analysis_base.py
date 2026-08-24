@@ -6,14 +6,31 @@
 import argparse
 import gzip
 from pathlib import Path
+from types import SimpleNamespace
 
 import common
 import pandas as pd
 import pytest
 
 from rocprof_compute_analyze.analysis_base import OmniAnalyze_Base
+from utils import schema
+from utils.specs import MachineSpecsCDNA
 
 MODULE = "rocprof_compute_analyze.analysis_base"
+
+# Trimmed MI350 sysinfo, mirroring tests/workloads/vcopy/MI350/sysinfo.csv.
+MI350_SYSINFO = {
+    "ip_blocks": "SQ|LDS|SQC|TA|TD|TCP|TCC|SPI|CPC|CPF|roofline",
+    "version": "3",
+    "compute_partition": "SPX",
+    "memory_partition": "NPS1",
+    "gpu_series": "MI350",
+    "gpu_model": "MI350",
+    "gpu_arch": "gfx950",
+    "cu_per_gpu": "256",
+    "total_l2_chan": "128",
+    "num_xcd": "8",
+}
 
 
 def _write_results_gz(path: Path, content: str) -> None:
@@ -177,3 +194,64 @@ def test_sanitize_rejects_paths_sharing_a_workload_name(tmp_path, monkeypatch) -
         OmniAnalyze_Base(argparse.Namespace(tui=False, path=paths), {}).sanitize()
 
     assert "last two components" in mock_error.call_args.args[1]
+
+
+def _specs_correction_analyzer(tmp_path, monkeypatch, specs_correction):
+    """Analyzer wired to a minimal MI350 workload, ready for initalize_runs().
+
+    Panel config generation is stubbed out so the run loop can be exercised
+    without loading the real arch YAML.
+    """
+    # MI350_SYSINFO is trimmed, so silence the "missing specs" warnings the
+    # spec-to-frame conversion emits for the fields it leaves unset.
+    common.patch_console(monkeypatch, "utils.specs", "warning")
+    pd.DataFrame([MI350_SYSINFO]).to_csv(tmp_path / "sysinfo.csv", index=False)
+
+    args = argparse.Namespace(
+        path=[[str(tmp_path)]],
+        specs_correction=specs_correction,
+        no_roof=True,
+        normal_unit="per_kernel",
+        gpu_kernel=None,
+        list_stats=False,
+        filter_metrics=None,
+        tui=False,
+        config_dir=str(tmp_path),
+    )
+    inst = OmniAnalyze_Base(args, {})
+    monkeypatch.setattr(inst, "generate_configs", lambda *a, **kw: {})
+    inst._arch_configs = {MI350_SYSINFO["gpu_arch"]: schema.ArchConfig()}
+    inst.set_soc({
+        MI350_SYSINFO["gpu_arch"]: SimpleNamespace(
+            _mspec=MachineSpecsCDNA(**MI350_SYSINFO)
+        )
+    })
+    return inst
+
+
+def test_initalize_runs_applies_specs_correction(tmp_path, monkeypatch) -> None:
+    """--specs-correction overrides the specs analysis runs on."""
+    inst = _specs_correction_analyzer(tmp_path, monkeypatch, "num_xcd:4,cu_per_gpu:64")
+
+    workload = inst.initalize_runs()[str(tmp_path)]
+
+    assert workload.sys_info["num_xcd"].item() == "4"
+    assert workload.sys_info["cu_per_gpu"].item() == "64"
+    # Uncorrected specs come through untouched, including the ip_blocks entry
+    # initalize_runs() reads right after applying the correction.
+    assert workload.sys_info["gpu_arch"].item() == "gfx950"
+    assert workload.sys_info["total_l2_chan"].item() == "128"
+    assert "SQ" in workload.avail_ips
+    assert "roofline" in workload.avail_ips
+
+
+def test_initalize_runs_without_specs_correction_keeps_sysinfo(
+    tmp_path, monkeypatch
+) -> None:
+    """Without the option the workload keeps the recorded sysinfo values."""
+    inst = _specs_correction_analyzer(tmp_path, monkeypatch, None)
+
+    workload = inst.initalize_runs()[str(tmp_path)]
+
+    assert workload.sys_info["num_xcd"].item() == 8
+    assert workload.sys_info["cu_per_gpu"].item() == 256
