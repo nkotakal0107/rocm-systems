@@ -703,6 +703,7 @@ local:
 hip_7.15 {
 global:
     hipMemGetDefaultMemPool;
+    hipDeviceGetP2PAtomicCapabilities;
 local:
     *;
 } hip_7.14;
